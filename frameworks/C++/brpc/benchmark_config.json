@@ -1,0 +1,26 @@
+{
+  "framework": "brpc",
+  "tests": [
+    {
+      "default": {
+        "json_url": "/JsonService/json",
+        "plaintext_url": "/PlaintextService/plaintext",
+        "port": 8080,
+        "approach": "Realistic",
+        "classification": "Platform",
+        "database": "None",
+        "framework": "None",
+        "language": "C++",
+        "flavor": "None",
+        "orm": "None",
+        "platform": "None",
+        "webserver": "None",
+        "os": "Linux",
+        "database_os": "Linux",
+        "display_name": "brpc",
+        "notes": "An industrial-grade RPC framework used throughout Baidu",
+        "versus": "None"
+      }
+    }
+  ]
+}

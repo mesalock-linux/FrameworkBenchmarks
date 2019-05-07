@@ -1,0 +1,19 @@
+syntax="proto2";
+package example;
+
+option cc_generic_services = true;
+
+message HttpRequest {};
+message HttpResponse {};
+
+message Message {
+  required string message = 1;
+};
+
+service PlaintextService {
+  rpc plaintext(HttpRequest) returns (HttpResponse);
+};
+
+service JsonService {
+  rpc json(HttpRequest) returns (HttpResponse);
+};
