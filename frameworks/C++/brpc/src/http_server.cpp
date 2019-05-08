@@ -18,6 +18,7 @@
 #include <butil/logging.h>
 #include <brpc/server.h>
 #include <brpc/errno.pb.h>
+#include <brpc/builtin/common.h>
 #include <json2pb/pb_to_json.h>
 #include "http.pb.h"
 
@@ -49,12 +50,9 @@ public:
         brpc::Controller* cntl =
             static_cast<brpc::Controller*>(cntl_base);
         // Fill response.
-        const int64_t start_time = butil::gettimeofday_us();
-        const time_t tm_s = start_time / 1000000L;
-        char buf[64];
-        struct tm lt;
-        strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S %Z",
-                 localtime_r(&tm_s, &lt));
+        char buf[256];
+        time_t now = time(0);
+        brpc::Time2GMT(now, buf, sizeof(buf));
         cntl->http_response().SetHeader("Date", buf);
         cntl->http_response().SetHeader("Server", "brpc");
         cntl->http_response().set_content_type("text/plain");
@@ -81,12 +79,9 @@ public:
         Message msg;
         msg.set_message("Hello, World!");
 
-        const int64_t start_time = butil::gettimeofday_us();
-        const time_t tm_s = start_time / 1000000L;
-        char buf[64];
-        struct tm lt;
-        strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S %Z",
-                 localtime_r(&tm_s, &lt));
+        char buf[256];
+        time_t now = time(0);
+        brpc::Time2GMT(now, buf, sizeof(buf));
         cntl->http_response().SetHeader("Date", buf);
         cntl->http_response().SetHeader("Server", "brpc");
         cntl->http_response().set_content_type("application/json");
