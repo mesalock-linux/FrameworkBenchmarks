@@ -49,6 +49,14 @@ public:
         brpc::Controller* cntl =
             static_cast<brpc::Controller*>(cntl_base);
         // Fill response.
+        const int64_t start_time = butil::gettimeofday_us();
+        const time_t tm_s = start_time / 1000000L;
+        char buf[64];
+        struct tm lt;
+        strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S %Z",
+                 localtime_r(&tm_s, &lt));
+        cntl->http_response().SetHeader("Date", buf);
+        cntl->http_response().SetHeader("Server", "brpc");
         cntl->http_response().set_content_type("text/plain");
         cntl->response_attachment().append("Hello, World!");
     }
@@ -73,7 +81,16 @@ public:
         Message msg;
         msg.set_message("Hello, World!");
 
+        const int64_t start_time = butil::gettimeofday_us();
+        const time_t tm_s = start_time / 1000000L;
+        char buf[64];
+        struct tm lt;
+        strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S %Z",
+                 localtime_r(&tm_s, &lt));
+        cntl->http_response().SetHeader("Date", buf);
+        cntl->http_response().SetHeader("Server", "brpc");
         cntl->http_response().set_content_type("application/json");
+
         butil::IOBufAsZeroCopyOutputStream wrapper(&cntl->response_attachment());
         std::string err;
         json2pb::Pb2JsonOptions opt;

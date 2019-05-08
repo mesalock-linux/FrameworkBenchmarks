@@ -26,8 +26,7 @@ RUN git clone https://github.com/apache/incubator-brpc brpc
 RUN cd /brpc && sh config_brpc.sh --headers=/usr/include --libs=/usr/lib && \
     make -j "$(nproc)"
 
-
-ADD ./ /http_server
+ADD ./src /http_server
 WORKDIR /http_server
 RUN make
 CMD ./http_server

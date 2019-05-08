@@ -13,8 +13,8 @@ LIBPATHS = $(addprefix -L, $(LIBS))
 COMMA=,
 SOPATHS=$(addprefix -Wl$(COMMA)-rpath$(COMMA), $(LIBS))
 
-SERVER_SOURCES = src/http_server.cpp
-PROTOS = src/http.proto
+SERVER_SOURCES = http_server.cpp
+PROTOS = http.proto
 
 PROTO_OBJS = $(PROTOS:.proto=.pb.o)
 PROTO_GENS = $(PROTOS:.proto=.pb.h) $(PROTOS:.proto=.pb.cc)
