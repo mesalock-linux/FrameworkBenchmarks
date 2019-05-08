@@ -34,6 +34,54 @@ DEFINE_string(ciphers, "", "Cipher suite used for SSL connections");
 
 namespace example {
 
+struct AsyncJob {
+    brpc::Controller* cntl;
+    google::protobuf::Closure* done;
+
+    void run_plaintext() {
+        brpc::ClosureGuard done_guard(done);
+        char buf[256];
+        time_t now = time(0);
+        brpc::Time2GMT(now, buf, sizeof(buf));
+        cntl->http_response().SetHeader("Date", buf);
+        cntl->http_response().SetHeader("Server", "brpc");
+        cntl->http_response().set_content_type("text/plain");
+        cntl->response_attachment().append("Hello, World!");
+        delete this;
+    }
+
+    void run_json() {
+        brpc::ClosureGuard done_guard(done);
+        Message msg;
+        msg.set_message("Hello, World!");
+        char buf[256];
+        time_t now = time(0);
+        brpc::Time2GMT(now, buf, sizeof(buf));
+        cntl->http_response().SetHeader("Date", buf);
+        cntl->http_response().SetHeader("Server", "brpc");
+        cntl->http_response().set_content_type("application/json");
+        butil::IOBufAsZeroCopyOutputStream wrapper(&cntl->response_attachment());
+        std::string err;
+        json2pb::Pb2JsonOptions opt;
+        if (!json2pb::ProtoMessageToJson(msg, &wrapper, opt, &err)) {
+            cntl->SetFailed(brpc::ERESPONSE, "Failed to parse content, %s", err.c_str());
+        }
+        delete this;
+    }
+};
+
+static void* process_plaintext_thread(void* args) {
+    AsyncJob* job = static_cast<AsyncJob*>(args);
+    job->run_plaintext();
+    return NULL;
+}
+
+static void* process_json_thread(void* args) {
+    AsyncJob* job = static_cast<AsyncJob*>(args);
+    job->run_json();
+    return NULL;
+}
+
 // Service with static path.
 class PlaintextServiceImpl : public PlaintextService {
 public:
@@ -46,17 +94,16 @@ public:
         // This object helps you to call done->Run() in RAII style. If you need
         // to process the request asynchronously, pass done_guard.release().
         brpc::ClosureGuard done_guard(done);
-        
         brpc::Controller* cntl =
             static_cast<brpc::Controller*>(cntl_base);
-        // Fill response.
-        char buf[256];
-        time_t now = time(0);
-        brpc::Time2GMT(now, buf, sizeof(buf));
-        cntl->http_response().SetHeader("Date", buf);
-        cntl->http_response().SetHeader("Server", "brpc");
-        cntl->http_response().set_content_type("text/plain");
-        cntl->response_attachment().append("Hello, World!");
+
+        // Process the request asynchronously.
+        AsyncJob* job = new AsyncJob;
+        job->cntl = cntl;
+        job->done = done;
+        bthread_t th;
+        CHECK_EQ(0, bthread_start_background(&th, NULL, process_plaintext_thread, job));
+        done_guard.release();
     }
 };
 
@@ -72,26 +119,16 @@ public:
         // This object helps you to call done->Run() in RAII style. If you need
         // to process the request asynchronously, pass done_guard.release().
         brpc::ClosureGuard done_guard(done);
-        
         brpc::Controller* cntl =
             static_cast<brpc::Controller*>(cntl_base);
-        // Fill response.
-        Message msg;
-        msg.set_message("Hello, World!");
 
-        char buf[256];
-        time_t now = time(0);
-        brpc::Time2GMT(now, buf, sizeof(buf));
-        cntl->http_response().SetHeader("Date", buf);
-        cntl->http_response().SetHeader("Server", "brpc");
-        cntl->http_response().set_content_type("application/json");
-
-        butil::IOBufAsZeroCopyOutputStream wrapper(&cntl->response_attachment());
-        std::string err;
-        json2pb::Pb2JsonOptions opt;
-        if (!json2pb::ProtoMessageToJson(msg, &wrapper, opt, &err)) {
-            cntl->SetFailed(brpc::ERESPONSE, "Failed to parse content, %s", err.c_str());
-        }
+        // Process the request asynchronously.
+        AsyncJob* job = new AsyncJob;
+        job->cntl = cntl;
+        job->done = done;
+        bthread_t th;
+        CHECK_EQ(0, bthread_start_background(&th, NULL, process_json_thread, job));
+        done_guard.release();
     }
 };
 
